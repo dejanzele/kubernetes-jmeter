@@ -1,13 +1,11 @@
-[![License](https://img.shields.io/badge/license-MIT%20License-brightgreen.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://travis-ci.org/kaarolch/kubernetes-jmeter.svg?branch=master)](https://travis-ci.org/kaarolch/kubernetes-jmeter)
 # kubernetes-jmeter
+[![License](https://img.shields.io/badge/license-MIT%20License-brightgreen.svg)](https://opensource.org/licenses/MIT)
 
-Jmeter test workload inside Kubernetes. [Jmeter](charts/jmeter) chart bootstraps an Jmeter stack on a Kubernetes cluster using the Helm package manager.
+Run distributed JMeter workloads in Kubernetes using Helm and easily configure JMeter Master and Slaves.
 
-Currently the [jmeter](charts/jmeter) Helm chart deploys:
-*   JMeter master
-*   JMeter slaves
+## Usage
 
-## Run Sample Test
+### Run Example Test
 
 First we need to create a ConfigMap with JMeter JMX test file.
 
@@ -54,7 +52,7 @@ Test could be restarted via pod restart:
 kubectl delete pods $(kubectl get pod -l "app=jmeter-master" -o jsonpath='{.items[0].metadata.name}')
 ```
 
-## Remove stack
+## Uninstall
 
 You can remove the stack using the Helm command:
 ```shell
