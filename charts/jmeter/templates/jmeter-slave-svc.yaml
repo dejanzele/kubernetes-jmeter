@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "jmeter.fullname" . }}-slave
+{{- if .Values.annotations }}
+  {{ toYaml .Values.annotations | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ template "jmeter.name" . }}-slave
+    chart: {{ template "jmeter.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  {{- if .Values.labels }}
+    {{ toYaml .Values.labels | indent 4 }}
+  {{- end }}
+spec:
+  selector:
+    app: {{ template "jmeter.name" . }}-slave
+    release: {{ .Release.Name }}
+  clusterIP: None
+  ports:
+  - name: server-port
+    protocol: TCP
+    port: 1099
+    targetPort: 1099
+  - name: rmi-local-port
+    protocol: TCP
+    port: 60001
+    targetPort: 60001

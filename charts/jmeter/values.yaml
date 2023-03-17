@@ -1,0 +1,79 @@
+# -- Image pull secrets
+imagePullSecrets: []
+
+# -- Additional annotations
+annotations: {}
+#-- Additional labels
+labels: {}
+
+images:
+  master:
+    # -- JMeter Master image repository
+    repo: dpejcev/jmeter-master
+    # -- JMeter Master image tag
+    tag: 5.5
+    # -- JMeter Master image pull policy
+    pullPolicy: IfNotPresent
+  slave:
+    # -- JMeter Slave image repository
+    repo: dpejcev/jmeter-slave
+    # -- JMeter Slave image tag
+    tag: 5.5
+    # -- JMeter Slave image pull policy
+    pullPolicy: IfNotPresent
+
+config:
+  # -- Additional environment variables which will be added to both master and slaves
+  additionalEnv:
+    - name: DATA_CONFIG
+      value: /test
+    - name: JMETER_UC1_NBUSERS
+      value: "5"
+  jmeterProperties:
+    JMETER_UC1_NBUSERS: "5"
+  # -- Disable SSL in both master and slaves
+  disableSSL: true
+  master:
+    # -- ConfigMap name which has a JMX file
+    testsConfigMap: "one-shot"
+    # -- JMeter Master replica count
+    replicaCount: 1
+    # -- JMeter Master pod restart policy
+    restartPolicy: OnFailure
+    # -- Additional volume mounts
+    additionalVolumeMounts: []
+    # -- Additional arguments to pass to JMeter Master
+    additionalJMeterArgs: ""
+    # -- Additional JVM arguments to pass to JMeter Master
+    additionalJVMArgs: ""
+    # -- Override default JVM arguments for JMeter Master
+    overrideJVMArgs: "-Xmn128m -Xms256m -Xmx256m"
+    # -- JMeter Master resources
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 256Mi
+  slaves:
+    # -- JMeter Slave replica count
+    replicaCount: 2
+    # -- JMeter Slave pod restart policy
+    restartPolicy: Always
+     # -- Additional volume mounts
+    additionalVolumeMounts: []
+    # -- Additional arguments to pass to JMeter Slave Server
+    additionalJMeterServerArgs: ""
+    # -- Additional JVM arguments to pass to JMeter Slave
+    additionalJVMArgs: ""
+    # -- Override default JVM arguments for JMeter Master
+    overrideJVMArgs: "-Xmn256m -Xms512m -Xmx512m"
+    # -- JMeter Slave resources
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 256Mi

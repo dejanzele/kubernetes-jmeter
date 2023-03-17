@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "jmeter.fullname" . }}-slave
+{{- if .Values.annotations }}
+  annotations:
+    {{ toYaml .Values.annotations | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ template "jmeter.name" . }}-slave
+    chart: {{ template "jmeter.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.labels }}
+  {{ toYaml .Values.labels | indent 4 }}
+{{- end }}
+spec:
+  replicas: {{ .Values.config.slaves.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "jmeter.name" . }}-slave
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "jmeter.name" . }}-slave
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ template "jmeter.name" . }}-slave
+        image: "{{ .Values.images.slave.repo }}:{{ .Values.images.slave.tag }}"
+        imagePullPolicy: {{ .Values.images.slave.pullPolicy }}
+        env:
+          - name: SSL_DISABLED
+            value: "{{ .Values.config.disableSSL }}"
+          {{- if .Values.config.slaves.additionalJMeterServerArgs }}
+          - name: ADDITIONAL_JMETER_SERVER_ARGS
+            value: "{{ .Values.config.slaves.additionalJMeterServerArgs }}"
+          {{- end }}
+          {{- if .Values.config.slaves.additionalJVMArgs }}
+          - name: ADDITIONAL_JVM_ARGS
+            value: "{{ .Values.config.slaves.additionalJVMArgs }}"
+          {{- end }}
+          {{- if .Values.config.slaves.overrideJVMArgs }}
+          - name: OVERRIDE_JVM_ARGS
+            value: "{{ .Values.config.slaves.overrideJVMArgs }}"
+          {{- end }}
+          {{- with .Values.config.additionalEnv }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        livenessProbe:
+          tcpSocket:
+            port: 1099
+          periodSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: 1099
+          periodSeconds: 5
+          initialDelaySeconds: 10
+        ports:
+        - containerPort: 1099
+          name: server-port
+          protocol: TCP
+        - containerPort: 60001
+          name: rmi-local-port
+          protocol: TCP
+        {{- with .Values.config.slaves.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if or .Values.config.master.testsConfigMap .Values.config.slaves.additionalVolumeMounts }}
+        volumeMounts:
+          {{- if .Values.config.master.testsConfigMap }}
+          - name: test-volume
+            mountPath: /test
+          {{- end }}
+          {{- with .Values.config.slaves.additionalVolumeMounts }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      {{- if .Values.config.master.testsConfigMap }}
+      volumes:
+        - name: test-volume
+          configMap:
+            name: {{ .Values.config.master.testsConfigMap }}
+      {{- end }}
+      restartPolicy: {{ .Values.config.slaves.restartPolicy }}

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: jmeter
+description: 'Distributed JMeter test workflow inside Kubernetes'
+version: 1.0.0
+appVersion: "5.5"
+home: https://github.com/dejanzele/kubernetes-jmeter
+sources:
+  - https://github.com/kaarolch/kubernetes-jmeter
+maintainers:
+  - name: Dejan Zele Pejchev
+    email: pejcev.dejan@gmail.com

@@ -1,0 +1,88 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "jmeter.fullname" . }}-master
+{{- if .Values.annotations }}
+  annotations:
+    {{ toYaml .Values.annotations | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ template "jmeter.name" . }}-master
+    chart: {{ template "jmeter.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  {{- if .Values.labels }}
+    {{ toYaml .Values.labels | indent 4 }}
+  {{- end }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "jmeter.name" . }}-master
+        release: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ template "jmeter.name" . }}-master
+        image: "{{ .Values.images.master.repo }}:{{ .Values.images.master.tag }}"
+        imagePullPolicy: {{ .Values.images.master.pullPolicy }}
+        env:
+          - name: SSL_DISABLED
+            value: "{{ .Values.config.disableSSL }}"
+          - name: ONE_SHOT
+            value: "true"
+          - name: SLAVE_SVC_NAME
+            value: "{{ template "jmeter.fullname" . }}-slave.{{ .Release.Namespace }}.svc.cluster.local"
+          - name: SLAVE_REPLICA_COUNT
+            value: "{{ .Values.config.slaves.replicaCount }}"
+          {{- if .Values.config.master.additionalJMeterArgs }}
+          - name: ADDITIONAL_JMETER_ARGS
+            value: "{{ .Values.config.master.additionalJMeterArgs }}"
+          {{- end }}
+          {{- if .Values.config.master.additionalJVMArgs }}
+          - name: ADDITIONAL_JVM_ARGS
+            value: "{{ .Values.config.master.additionalJVMArgs }}"
+          {{- end }}
+          {{- if .Values.config.master.overrideJVMArgs }}
+          - name: OVERRIDE_JVM_ARGS
+            value: "{{ .Values.config.master.overrideJVMArgs }}"
+          {{- end }}
+          {{- with .Values.config.additionalEnv }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+          {{- if .Values.config.jmeterProperties }}
+          {{- $props := "" }}
+          {{- range $key, $value := .Values.config.jmeterProperties }}
+          {{- $props = printf "%s-G%s=%s " $props $key $value }}
+          - name: JMETER_PROPERTIES
+            value: "{{ $props }}"
+          {{- end }}
+          {{- end }}
+        ports:
+        - containerPort: 60000
+          name: rmi-local-port
+          protocol: TCP
+        {{- with .Values.config.master.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if or .Values.config.master.testsConfigMap .Values.config.master.additionalVolumeMounts }}
+        volumeMounts:
+          {{- if .Values.config.master.testsConfigMap }}
+          - name: test-volume
+            mountPath: /test
+          {{- end }}
+          {{- with .Values.config.master.additionalVolumeMounts }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      {{- if .Values.config.master.testsConfigMap }}
+      volumes:
+      - name: test-volume
+        configMap:
+          name: {{ .Values.config.master.testsConfigMap }}
+      {{- end }}
+      restartPolicy: {{ .Values.config.master.restartPolicy }}
